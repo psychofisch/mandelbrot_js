@@ -24,7 +24,7 @@ function main() {
 	ctx.imageSmoothingEnabled = false;
 
 	var mandelbrotCanvas = document.createElement('canvas');
-	var mbScale = 50;
+	var mbScale = 100;
 	mandelbrotCanvas.height = 2 * mbScale;
 	mandelbrotCanvas.width = 3 * mbScale;
 	mbCtx = mandelbrotCanvas.getContext('2d');
@@ -45,6 +45,10 @@ function main() {
 	ctx.save();
 	ctx.scale(fac, fac);
 	
+	console.time("test");
+	
+	var iterations = 100;
+	
 	var current = math.complex(0, 0);
 	for(var y = 0; y < mandelbrotCanvas.height; y++)
 	{
@@ -53,31 +57,37 @@ function main() {
 		{
 			current.re = limits.left + ((x/mandelbrotCanvas.width) * limits.width);
 			
-			var res = isInMandelbrot(current, 100);
+			var res = isInMandelbrot(current, iterations);
 			
 			//console.log(current + " : " + res);
 			
-			// var res = iterate(current, 2);
 			// if(res.length() < 2)
 			// if(res)
 				// mbCtx.fillStyle = 'green';
 			// else
 				// mbCtx.fillStyle = 'darkgrey';
 			
-			var grey = res/100 * 255;
-			mbCtx.fillStyle = 'rgb(' + grey + ',' + grey + ',' + grey + ')';
+			var ratio = res / iterations;
+			var grey = ratio * 255;
+			var r = grey;
+			var g = 0;
+			var b = 255 - grey;
+			//mbCtx.fillStyle = 'rgb(' + grey + ',' + grey + ',' + grey + ')';
+			//mbCtx.fillStyle = 'rgb(' + r + ',' + g + ',' + b + ')';
+			
+			mbCtx.fillStyle = tinycolor.fromRatio({ h: 1-ratio, s: 1, v: ratio * 2 }).toRgbString();
 			
 			//mbCtx.fillStyle = 'rgb(' + Math.floor(255 * x/mandelbrotCanvas.width) + ',' + Math.floor(255 * y/mandelbrotCanvas.height) + ',0)';
 			mbCtx.fillRect(x, y, 1, 1);
 		}
-		
-		ctx.drawImage(mbCtx.canvas, 0, 0);
 	}
 
+	console.timeEnd("test");
+	
 	// var z = math.complex(0, 0);
 	// var c = math.complex(0, 1);
 	// var res = isInMandelbrot(c, 10);
-
+	ctx.drawImage(mbCtx.canvas, 0, 0);
 	ctx.restore();
 }
 
@@ -89,13 +99,11 @@ function isInMandelbrot(c, maxIt)
 	}
 	
 	var it = maxIt;
-	var first = math.complex(0, 0);
 	var tmp = math.complex(0, 0);
 	
 	for(var i = 0; i < maxIt; i++)
 	{
-		first = fx(tmp, c);
-		tmp = first.clone();
+		tmp = fx(tmp, c);
 		
 		//console.log(tmp + " with length of " + tmp.abs());
 		
@@ -108,30 +116,9 @@ function isInMandelbrot(c, maxIt)
 	return maxIt;
 }
 
-function iterate(c, it)
-{
-	if(it <= 0)
-	{
-		return c;
-	}
-	
-	var first = new Victor(0, 0);
-	var tmp = new Victor(0, 0);
-	
-	while(it > 0)
-	{
-		first = fx(tmp, c);
-		tmp = first;
-		console.log(it + ": " + tmp);
-		it--;
-	}
-	return tmp;
-}
-
 function fx(z, c)
 {
-	var result;
-	result = z.clone();
+	var result = z.clone();
 	result = math.multiply(result, result);
 	result = math.add(result, c);
 	return result;
