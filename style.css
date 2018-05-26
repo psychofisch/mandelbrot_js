@@ -1,0 +1,38 @@
+@import url('https://fonts.googleapis.com/css?family=VT323');
+
+* {
+  -webkit-touch-callout: none; /* iOS Safari */
+    -webkit-user-select: none; /* Safari */
+     -khtml-user-select: none; /* Konqueror HTML */
+       -moz-user-select: none; /* Firefox */
+        -ms-user-select: none; /* Internet Explorer/Edge */
+            user-select: none; /* Non-prefixed version, currently
+                                  supported by Chrome and Opera */
+}
+
+body {
+  margin:0; padding: 0; border:0; background: #454a35;
+    overflow: hidden;
+}
+
+div {
+  position: absolute; margin: 0; padding: 0; border: 0;
+    outline:0; color:white;
+}
+
+#viewport {
+  position: absolute;
+  left: 0;
+  top: 0;
+  overflow: hidden;
+  margin: 0 auto;
+  z-index: 0;
+}
+
+.hidden {
+  display: none;
+}
+
+#debug {
+  z-index: 100;
+}
