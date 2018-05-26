@@ -41,6 +41,10 @@ function main() {
 	limits.width = 3;
 	limits.height = -2;
 
+	var fac = ctx.canvas.height/mbCtx.canvas.height;
+	ctx.save();
+	ctx.scale(fac, fac);
+	
 	var current = math.complex(0, 0);
 	for(var y = 0; y < mandelbrotCanvas.height; y++)
 	{
@@ -55,24 +59,25 @@ function main() {
 			
 			// var res = iterate(current, 2);
 			// if(res.length() < 2)
-			if(res)
-				mbCtx.fillStyle = 'green';
-			else
-				mbCtx.fillStyle = 'darkgrey';
+			// if(res)
+				// mbCtx.fillStyle = 'green';
+			// else
+				// mbCtx.fillStyle = 'darkgrey';
+			
+			var grey = res/100 * 255;
+			mbCtx.fillStyle = 'rgb(' + grey + ',' + grey + ',' + grey + ')';
 			
 			//mbCtx.fillStyle = 'rgb(' + Math.floor(255 * x/mandelbrotCanvas.width) + ',' + Math.floor(255 * y/mandelbrotCanvas.height) + ',0)';
 			mbCtx.fillRect(x, y, 1, 1);
 		}
+		
+		ctx.drawImage(mbCtx.canvas, 0, 0);
 	}
 
 	// var z = math.complex(0, 0);
 	// var c = math.complex(0, 1);
 	// var res = isInMandelbrot(c, 10);
 
-	var fac = ctx.canvas.height/mbCtx.canvas.height;
-	ctx.save();
-	ctx.scale(fac, fac);
-	ctx.drawImage(mbCtx.canvas, 0, 0);
 	ctx.restore();
 }
 
@@ -87,7 +92,7 @@ function isInMandelbrot(c, maxIt)
 	var first = math.complex(0, 0);
 	var tmp = math.complex(0, 0);
 	
-	while(it > 0)
+	for(var i = 0; i < maxIt; i++)
 	{
 		first = fx(tmp, c);
 		tmp = first.clone();
@@ -96,13 +101,11 @@ function isInMandelbrot(c, maxIt)
 		
 		if(tmp.abs() > 2)
 		{
-			return false;
+			return i;
 		}
-		
-		it--;
 	}
 	
-	return true;
+	return maxIt;
 }
 
 function iterate(c, it)
