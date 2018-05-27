@@ -53,14 +53,7 @@ function draw()
 	mbCtx.fillStyle = 'darkgrey';
 	mbCtx.fillRect(0, 0, mandelbrotCanvas.width, mandelbrotCanvas.height);
 
-	var facH = ctx.canvas.height/mbCtx.canvas.height;
-	var facW = ctx.canvas.width/mbCtx.canvas.width;
-	var fac;
-	
-	if(facH < facW)
-		fac = facH;
-	else
-		fac = facW;
+	var fac = ctx.canvas.height/mbCtx.canvas.height;
 	
 	ctx.save();
 	ctx.scale(fac, fac);
@@ -114,8 +107,19 @@ function resize()
 	if(canvas == undefined)
 		canvas = document.querySelector("#viewport");
 	
-	canvas.height = window.innerHeight;
-	canvas.width = window.innerWidth;
+	var arLimits = Math.abs(limits.width/limits.height);
+	var arWindow = Math.abs(window.innerWidth/window.innerHeight);
+	
+	if(arWindow > arLimits)
+	{
+		canvas.height = window.innerHeight;
+		canvas.width = window.innerHeight * arLimits;
+	}
+	else
+	{
+		canvas.width = window.innerWidth;
+		canvas.height = window.innerWidth / arLimits;
+	}
 	
 	ctx = canvas.getContext("2d");
 
