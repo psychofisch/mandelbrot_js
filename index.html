@@ -13,6 +13,18 @@
     </head>
     <body onload="main()">
         <div id="debug"></div>
+		<div id="settings">
+			<label class="heading">Settings</label>
+			<table>
+				<tr>
+					<td><label>Iterations</label></td><td><input type="number" id="iterationsBox" value="10"/></td>
+				</tr>
+				<tr>
+					<td><label>Resolution</label></td><td><input type="number" id="resolutionBox" value="10"/></td>
+				</tr>
+			</table>
+			<div id="recalculateBtn" class="button" onclick="draw()">Recalculate</div>
+		</div>
         <canvas id="viewport"></canvas>
     </body>
 </html>

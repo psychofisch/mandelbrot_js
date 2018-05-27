@@ -1,53 +1,71 @@
 //author: psychofisch
 
+var iterations = 100,
+	mbScale = 10,
+	limits,
+	mbCtx,
+	ctx,
+	mandelbrotCanvas,
+	canvas;
+
 function main() {
-	const canvas = document.querySelector("#viewport");
-
-	if(!canvas)
+	if(limits == undefined)
 	{
-		alert("Unable to find #viewport.");
-		return;
+		limits = {};
+		limits.left = -2;
+		limits.top = 1;
+		limits.width = 3;
+		limits.height = -2;
+	}
+	
+	resize();
+	draw();
+}
+
+function draw()
+{	
+	var redraw = false;
+	if(canvas.height != window.innerHeight || canvas.width != window.innerWidth)
+	{
+		resize();
+		
+		redraw = true;
 	}
 
-	canvas.height = window.innerHeight;
-	canvas.width = window.innerWidth;
-
-	// Initialize the GL context
-	const ctx = canvas.getContext("2d");
-
-	// Only continue if WebGL is available and working
-	if (!ctx) {
-		alert("Unable to initialize context.");
+	var tmpIt = document.querySelector("#iterationsBox").value;
+	var tmpScale = document.querySelector("#resolutionBox").value;
+	
+	if(!redraw && (tmpIt == iterations && tmpScale == mbScale))
+	{
 		return;
 	}
-
-	ctx.imageSmoothingEnabled = false;
-
-	var mandelbrotCanvas = document.createElement('canvas');
-	var mbScale = 100;
-	mandelbrotCanvas.height = 2 * mbScale;
-	mandelbrotCanvas.width = 3 * mbScale;
+	
+	iterations = tmpIt;
+	mbScale = tmpScale;
+	
+	mandelbrotCanvas.height = Math.abs(limits.height) * mbScale;
+	mandelbrotCanvas.width = math.abs(limits.width) * mbScale;
 	mbCtx = mandelbrotCanvas.getContext('2d');
 
-	ctx.fillStyle = 'aliceblue';
-	ctx.fillRect(0, 0, canvas.width, canvas.height);
+	ctx.fillStyle = 'black';
+	ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
 	mbCtx.fillStyle = 'darkgrey';
 	mbCtx.fillRect(0, 0, mandelbrotCanvas.width, mandelbrotCanvas.height);
 
-	var limits = {};
-	limits.left = -2;
-	limits.top = 1;
-	limits.width = 3;
-	limits.height = -2;
-
-	var fac = ctx.canvas.height/mbCtx.canvas.height;
+	var facH = ctx.canvas.height/mbCtx.canvas.height;
+	var facW = ctx.canvas.width/mbCtx.canvas.width;
+	var fac;
+	
+	if(facH < facW)
+		fac = facH;
+	else
+		fac = facW;
+	
 	ctx.save();
 	ctx.scale(fac, fac);
 	
-	console.time("test");
-	
-	var iterations = 100;
+	console.time("calculation time");
 	
 	var current = math.complex(0, 0);
 	for(var y = 0; y < mandelbrotCanvas.height; y++)
@@ -82,13 +100,33 @@ function main() {
 		}
 	}
 
-	console.timeEnd("test");
+	console.timeEnd("calculation time");
 	
 	// var z = math.complex(0, 0);
 	// var c = math.complex(0, 1);
 	// var res = isInMandelbrot(c, 10);
 	ctx.drawImage(mbCtx.canvas, 0, 0);
 	ctx.restore();
+}
+
+function resize()
+{
+	if(canvas == undefined)
+		canvas = document.querySelector("#viewport");
+	
+	canvas.height = window.innerHeight;
+	canvas.width = window.innerWidth;
+	
+	ctx = canvas.getContext("2d");
+
+	if (!ctx) {
+		alert("Unable to initialize context.");
+		return;
+	}
+
+	ctx.imageSmoothingEnabled = false;
+
+	mandelbrotCanvas = document.createElement('canvas');
 }
 
 function isInMandelbrot(c, maxIt)
