@@ -6,7 +6,8 @@ var iterations = 100,
 	mbCtx,
 	ctx,
 	mandelbrotCanvas,
-	canvas;
+	canvas,
+	pixiApp;
 
 function main() {
 	if(limits == undefined)
@@ -18,8 +19,19 @@ function main() {
 		limits.height = -2;
 	}
 	
-	resize();
-	draw();
+	resizePixi();
+	//drawPixi();
+	drawPixiShader();
+	
+	// resize();
+	// draw();
+}
+
+function recalcClick()
+{
+	// drawPixi();
+	// draw();
+	drawPixiShader();
 }
 
 function draw()
@@ -44,7 +56,7 @@ function draw()
 	mbScale = tmpScale;
 	
 	mandelbrotCanvas.height = Math.abs(limits.height) * mbScale;
-	mandelbrotCanvas.width = math.abs(limits.width) * mbScale;
+	mandelbrotCanvas.width = Math.abs(limits.width) * mbScale;
 	mbCtx = mandelbrotCanvas.getContext('2d');
 
 	ctx.fillStyle = 'black';
@@ -131,6 +143,199 @@ function resize()
 	ctx.imageSmoothingEnabled = false;
 
 	mandelbrotCanvas = document.createElement('canvas');
+}
+
+function resizePixi()
+{
+	var size = {};
+	var arLimits = Math.abs(limits.width/limits.height);
+	var arWindow = Math.abs(window.innerWidth/window.innerHeight);
+	
+	if(arWindow > arLimits)
+	{
+		size.width = window.innerHeight * arLimits;
+		size.height = window.innerHeight;
+	}
+	else
+	{
+		size.width = window.innerWidth;
+		size.height = window.innerWidth / arLimits;
+	}
+	
+	if(pixiApp != undefined)
+		pixiApp.destroy(true);
+	
+	pixiApp = new PIXI.Application(size.width, size.height);
+	document.body.appendChild(pixiApp.view);	
+}
+
+function drawPixi()
+{	
+	var redraw = false;
+	if(pixiApp.screen.height != window.innerHeight || pixiApp.screen.width != window.innerWidth)
+	{
+		resizePixi();
+		redraw = true;
+	}
+
+	var tmpIt = document.querySelector("#iterationsBox").value;
+	var tmpScale = document.querySelector("#resolutionBox").value;
+	
+	if(!redraw && (tmpIt == iterations && tmpScale == mbScale))
+	{
+		return;
+	}
+	
+	iterations = tmpIt;
+	mbScale = tmpScale;
+	
+	var size = {};
+	size.height = Math.abs(limits.height) * mbScale;
+	size.width = Math.abs(limits.width) * mbScale;
+	
+	//mbCtx = mandelbrotCanvas.getContext('2d');
+	var graphics = new PIXI.Graphics();
+	
+	var fac = pixiApp.screen.height/size.height;
+	
+	graphics.scale.x = fac;
+	graphics.scale.y = fac;
+	
+	//ctx.fillStyle = 'black';
+	//ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+	
+	graphics.beginFill(parseInt(tinycolor('darkgrey').toHex(),16));
+	graphics.drawRect(0, 0, size.width, size.height);
+	//mbCtx.fillStyle = 'darkgrey';
+	//mbCtx.fillRect(0, 0, mandelbrotCanvas.width, mandelbrotCanvas.height);
+
+	var fac = pixiApp.screen.height/size.height;
+	
+	//ctx.save();
+	//ctx.scale(fac, fac);
+	
+	console.time("calculation time");
+	
+	var current = math.complex(0, 0);
+	for(var y = 0; y < size.height; y++)
+	{
+		current.im = limits.top + ((y/size.height) * limits.height);
+		for(var x = 0; x < size.width; x++)
+		{
+			current.re = limits.left + ((x/size.width) * limits.width);
+			
+			var res = isInMandelbrot(current, iterations);
+			
+			//console.log(current + " : " + res);
+			
+			var ratio = res / iterations;
+			var grey = ratio * 255;
+			var r = grey;
+			var g = 0;
+			var b = 255 - grey;
+			
+			var color = tinycolor.fromRatio({ h: 1-ratio, s: 1, v: ratio * 2 }).toHex();			
+			graphics.beginFill(parseInt(color, 16));
+			graphics.drawRect(x, y, 1, 1);
+		}
+	}
+
+	console.timeEnd("calculation time");
+	
+	//ctx.drawImage(mbCtx.canvas, 0, 0);
+	//ctx.restore();
+	pixiApp.stage.addChild(graphics);
+}
+
+function drawPixiShader()
+{	
+	var redraw = false;
+	if(pixiApp.screen.height != window.innerHeight || pixiApp.screen.width != window.innerWidth)
+	{
+		resizePixi();
+		redraw = true;
+	}
+
+	var tmpIt = document.querySelector("#iterationsBox").value;
+	var tmpScale = document.querySelector("#resolutionBox").value;
+	
+	if(!redraw && (tmpIt == iterations && tmpScale == mbScale))
+	{
+		return;
+	}
+	
+	iterations = tmpIt;
+	mbScale = tmpScale;
+	
+	var size = {};
+	size.height = Math.abs(limits.height) * mbScale;
+	size.width = Math.abs(limits.width) * mbScale;
+	
+	var graphics = new PIXI.Graphics();
+	pixiApp.stage.addChild(graphics);
+	graphics.width = size.width;
+	graphics.height = size.height;
+	
+	graphics.beginFill(parseInt(tinycolor('darkgrey').toHex(),16));
+	graphics.drawRect(0, 0, size.width, size.height);
+	
+	// complex numbers: https://github.com/julesb/glsl-util/blob/master/complexvisual.glsl
+	var fragSource = `
+		
+		precision mediump float;
+
+		varying vec2 vTextureCoord;
+		
+		//limits.left = -2;
+		//limits.top = 1;
+		//limits.width = 3;
+		//limits.height = -2;
+		
+		vec2 cx_mul(vec2 a, vec2 b)
+		{
+			return vec2(a.x*b.x-a.y*b.y, a.x*b.y+a.y*b.x);
+		}
+
+		vec2 fx(vec2 z, vec2 c)
+		{
+			vec2 result = z;
+			result = cx_mul(result, result);
+			result += c;
+			return result;
+		}
+		
+		int isInMandelbrot(vec2 c)
+		{
+			vec2 tmp;
+			
+			for(int i = 0; i < 100; i++)
+			{
+				tmp = fx(tmp, c);
+				
+				//console.log(tmp + " with length of " + tmp.abs());
+				
+				if(length(tmp) > 2.0)
+				{
+					return i;
+				}
+			}
+			
+			return 100;
+		}
+		
+		void main(){
+			vec3 col = vec3(0.0);
+			vec2 coords;
+			coords.x = -2.0 + (vTextureCoord.x * 3.0);
+			coords.y = -1.0 + (vTextureCoord.y * 2.0);
+			int its = isInMandelbrot(coords);
+			col = vec3(float(its)/100.0);
+			gl_FragColor = vec4(col,1.0);
+		}
+	`;
+	var filter = new PIXI.Filter(null, fragSource);
+	
+	graphics.filters = [filter];
 }
 
 function isInMandelbrot(c, maxIt)

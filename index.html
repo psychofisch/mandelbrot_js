@@ -9,6 +9,8 @@
 		<!--<script src="victor.min.js"></script>-->
 		<script src='tinycolor.js'></script>
 		<script src="math.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/4.8.0/pixi.min.js"></script>
+		<script type="shader" id="mandelFrag" src="mandel.frag"></script>
         <script src="main.js"></script>
     </head>
     <body onload="main()">
@@ -23,7 +25,7 @@
 					<td><label>Resolution</label></td><td><input type="number" id="resolutionBox" value="50"/></td>
 				</tr>
 			</table>
-			<div id="recalculateBtn" class="button" onclick="draw()">Recalculate</div>
+			<div id="recalculateBtn" class="button" onclick="recalcClick()">Recalculate</div>
 		</div>
         <canvas id="viewport"></canvas>
     </body>
