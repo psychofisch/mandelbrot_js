@@ -7,7 +7,8 @@ var iterations = 100,
 	ctx,
 	mandelbrotCanvas,
 	canvas,
-	pixiApp;
+	pixiApp,
+	graphics;
 
 function main() {
 	if(limits == undefined)
@@ -271,10 +272,21 @@ function drawPixiShader()
 	size.height = Math.abs(limits.height) * mbScale;
 	size.width = Math.abs(limits.width) * mbScale;
 	
-	var graphics = new PIXI.Graphics();
+	if(graphics != undefined)
+		graphics.destroy();
+	
+	graphics = new PIXI.Graphics();
+	
+	graphics.cacheAsBitmap = true;
+	
+	//var fac = pixiApp.screen.height/size.height;
+	
 	pixiApp.stage.addChild(graphics);
 	graphics.width = size.width;
 	graphics.height = size.height;
+	
+	//graphics.scale.x = fac;
+	//graphics.scale.y = fac;
 	
 	graphics.beginFill(parseInt(tinycolor('darkgrey').toHex(),16));
 	graphics.drawRect(0, 0, size.width, size.height);
@@ -290,6 +302,26 @@ function drawPixiShader()
 		//limits.top = 1;
 		//limits.width = 3;
 		//limits.height = -2;
+		
+		uniform vec4 limits;
+		uniform vec2 dimension;
+		uniform vec4 filterArea;
+		
+		vec2 mapCoord(vec2 coord)
+		{
+			coord *= filterArea.xy;
+			coord += filterArea.zw;
+
+			return coord;
+		}
+
+		vec2 unmapCoord(vec2 coord)
+		{
+			coord -= filterArea.zw;
+			coord /= filterArea.xy;
+
+			return coord;
+		}
 		
 		vec2 cx_mul(vec2 a, vec2 b)
 		{
@@ -325,15 +357,42 @@ function drawPixiShader()
 		
 		void main(){
 			vec3 col = vec3(0.0);
-			vec2 coords;
-			coords.x = -2.0 + (vTextureCoord.x * 3.0);
-			coords.y = -1.0 + (vTextureCoord.y * 2.0);
+			vec2 coords = vTextureCoord;
+			coords = mapCoord(coords) / dimension;
+			
+			coords.x = limits.x + (coords.x * limits.z);
+			coords.y = limits.y + (coords.y * limits.w);
 			int its = isInMandelbrot(coords);
 			col = vec3(float(its)/100.0);
+			
+			//col.r = coords.x;
+			//col.g = coords.y;
+			
 			gl_FragColor = vec4(col,1.0);
 		}
 	`;
+	
 	var filter = new PIXI.Filter(null, fragSource);
+	
+	filter.apply = function(filterManager, input, output)
+	{
+	  this.uniforms.dimension[0] = input.sourceFrame.width
+	  this.uniforms.dimension[1] = input.sourceFrame.height
+    
+	  //console.log(filterManager);
+	  //console.log(input);
+	  //console.log(output);
+	  //
+	  //debugger;
+	  
+	  // draw the filter...
+	  filterManager.applyFilter(this, input, output);
+	}
+	
+	filter.uniforms.limits[0] = limits.left;
+	filter.uniforms.limits[1] = limits.top;
+	filter.uniforms.limits[2] = limits.width;
+	filter.uniforms.limits[3] = limits.height;
 	
 	graphics.filters = [filter];
 }
