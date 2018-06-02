@@ -8,7 +8,9 @@ var iterations = 100,
 	mandelbrotCanvas,
 	canvas,
 	pixiApp,
-	graphics;
+	graphics,
+	size,
+	mandelSize;
 
 function main() {
 	if(limits == undefined)
@@ -28,10 +30,47 @@ function main() {
 	// draw();
 }
 
+function calculateScreenSize()
+{
+	var newSize = {};
+	var arLimits = Math.abs(limits.width/limits.height);
+	var arWindow = Math.abs(window.innerWidth/window.innerHeight);
+	
+	if(arWindow > arLimits)
+	{
+		newSize.width = window.innerHeight * arLimits;
+		newSize.height = window.innerHeight;
+	}
+	else
+	{
+		newSize.width = window.innerWidth;
+		newSize.height = window.innerWidth / arLimits;
+	}
+	
+	var mandel = calculateMandelSize();
+	
+	if(mandel.width > newSize.width)
+	{
+		newSize = mandel;
+		console.log("MANDEL");
+	}
+	
+	return newSize;
+}
+
+function calculateMandelSize()
+{
+	var result = {};
+	result.height = Math.abs(limits.height) * mbScale;
+	result.width = Math.abs(limits.width) * mbScale;
+	return result;
+}
+
 function recalcClick()
 {
 	// drawPixi();
 	// draw();
+	resizePixi();
 	drawPixiShader();
 }
 
@@ -120,19 +159,10 @@ function resize()
 	if(canvas == undefined)
 		canvas = document.querySelector("#viewport");
 	
-	var arLimits = Math.abs(limits.width/limits.height);
-	var arWindow = Math.abs(window.innerWidth/window.innerHeight);
+	size = calculateScreenSize();
 	
-	if(arWindow > arLimits)
-	{
-		canvas.height = window.innerHeight;
-		canvas.width = window.innerHeight * arLimits;
-	}
-	else
-	{
-		canvas.width = window.innerWidth;
-		canvas.height = window.innerWidth / arLimits;
-	}
+	canvas.width = size.width;
+	canvas.height = size.height;
 	
 	ctx = canvas.getContext("2d");
 
@@ -148,20 +178,7 @@ function resize()
 
 function resizePixi()
 {
-	var size = {};
-	var arLimits = Math.abs(limits.width/limits.height);
-	var arWindow = Math.abs(window.innerWidth/window.innerHeight);
-	
-	if(arWindow > arLimits)
-	{
-		size.width = window.innerHeight * arLimits;
-		size.height = window.innerHeight;
-	}
-	else
-	{
-		size.width = window.innerWidth;
-		size.height = window.innerWidth / arLimits;
-	}
+	size = calculateScreenSize();
 	
 	if(pixiApp != undefined)
 		pixiApp.destroy(true);
@@ -192,40 +209,27 @@ function drawPixi()
 	iterations = tmpIt;
 	mbScale = tmpScale;
 	
-	var size = {};
-	size.height = Math.abs(limits.height) * mbScale;
-	size.width = Math.abs(limits.width) * mbScale;
+	mandelSize = calculateMandelSize();
 	
-	//mbCtx = mandelbrotCanvas.getContext('2d');
 	var graphics = new PIXI.Graphics();
 	
-	var fac = pixiApp.screen.height/size.height;
+	var fac = pixiApp.screen.height/mandelSize.height;
 	
 	graphics.scale.x = fac;
 	graphics.scale.y = fac;
-	
-	//ctx.fillStyle = 'black';
-	//ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-	
-	graphics.beginFill(parseInt(tinycolor('darkgrey').toHex(),16));
-	graphics.drawRect(0, 0, size.width, size.height);
-	//mbCtx.fillStyle = 'darkgrey';
-	//mbCtx.fillRect(0, 0, mandelbrotCanvas.width, mandelbrotCanvas.height);
 
-	var fac = pixiApp.screen.height/size.height;
-	
-	//ctx.save();
-	//ctx.scale(fac, fac);
-	
+	graphics.beginFill(parseInt(tinycolor('darkgrey').toHex(),16));
+	graphics.drawRect(0, 0, mandelSize.width, mandelSize.height);
+
 	console.time("calculation time");
 	
 	var current = math.complex(0, 0);
-	for(var y = 0; y < size.height; y++)
+	for(var y = 0; y < mandelSize.height; y++)
 	{
-		current.im = limits.top + ((y/size.height) * limits.height);
-		for(var x = 0; x < size.width; x++)
+		current.im = limits.top + ((y/mandelSize.height) * limits.height);
+		for(var x = 0; x < mandelSize.width; x++)
 		{
-			current.re = limits.left + ((x/size.width) * limits.width);
+			current.re = limits.left + ((x/mandelSize.width) * limits.width);
 			
 			var res = isInMandelbrot(current, iterations);
 			
@@ -270,9 +274,7 @@ function drawPixiShader()
 	iterations = tmpIt;
 	mbScale = tmpScale;
 	
-	var size = {};
-	size.height = Math.abs(limits.height) * mbScale;
-	size.width = Math.abs(limits.width) * mbScale;
+	mandelSize = calculateMandelSize();
 	
 	if(graphics != undefined)
 		graphics.destroy();
@@ -281,21 +283,20 @@ function drawPixiShader()
 	
 	graphics.cacheAsBitmap = true;
 	
-	var fac = pixiApp.screen.height/size.height;
+	var fac = pixiApp.screen.height/mandelSize.height;
 	
 	pixiApp.stage.addChild(graphics);
-	graphics.width = size.width;
-	graphics.height = size.height;
+	graphics.width = mandelSize.width;
+	graphics.height = mandelSize.height;
 	
 	graphics.scale.x = fac;
 	graphics.scale.y = fac;
 	
 	graphics.beginFill(parseInt(tinycolor('darkgrey').toHex(),16));
-	graphics.drawRect(0, 0, size.width, size.height);
+	graphics.drawRect(0, 0, mandelSize.width, mandelSize.height);
 	
 	// complex numbers: https://github.com/julesb/glsl-util/blob/master/complexvisual.glsl
 	var fragSource = `
-		
 		precision mediump float;
 
 		varying vec2 vTextureCoord;
