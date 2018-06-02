@@ -167,7 +167,9 @@ function resizePixi()
 		pixiApp.destroy(true);
 	
 	pixiApp = new PIXI.Application(size.width, size.height);
-	document.body.appendChild(pixiApp.view);	
+	document.body.appendChild(pixiApp.view);
+	
+	PIXI.settings.SCALE_MODE = PIXI.SCALE_MODES.NEAREST;
 }
 
 function drawPixi()
@@ -178,7 +180,7 @@ function drawPixi()
 		resizePixi();
 		redraw = true;
 	}
-
+	
 	var tmpIt = document.querySelector("#iterationsBox").value;
 	var tmpScale = document.querySelector("#resolutionBox").value;
 	
@@ -279,14 +281,14 @@ function drawPixiShader()
 	
 	graphics.cacheAsBitmap = true;
 	
-	//var fac = pixiApp.screen.height/size.height;
+	var fac = pixiApp.screen.height/size.height;
 	
 	pixiApp.stage.addChild(graphics);
 	graphics.width = size.width;
 	graphics.height = size.height;
 	
-	//graphics.scale.x = fac;
-	//graphics.scale.y = fac;
+	graphics.scale.x = fac;
+	graphics.scale.y = fac;
 	
 	graphics.beginFill(parseInt(tinycolor('darkgrey').toHex(),16));
 	graphics.drawRect(0, 0, size.width, size.height);
@@ -303,6 +305,7 @@ function drawPixiShader()
 		//limits.width = 3;
 		//limits.height = -2;
 		
+		uniform float maxIterations;
 		uniform vec4 limits;
 		uniform vec2 dimension;
 		uniform vec4 filterArea;
@@ -340,8 +343,11 @@ function drawPixiShader()
 		{
 			vec2 tmp;
 			
-			for(int i = 0; i < 100; i++)
+			for(int i = 0; i < 1000; i++)
 			{
+				if(i == int(maxIterations))
+					break;
+				
 				tmp = fx(tmp, c);
 				
 				//console.log(tmp + " with length of " + tmp.abs());
@@ -360,13 +366,12 @@ function drawPixiShader()
 			vec2 coords = vTextureCoord;
 			coords = mapCoord(coords) / dimension;
 			
+			coords += 5.0/dimension;
+			
 			coords.x = limits.x + (coords.x * limits.z);
 			coords.y = limits.y + (coords.y * limits.w);
 			int its = isInMandelbrot(coords);
-			col = vec3(float(its)/100.0);
-			
-			//col.r = coords.x;
-			//col.g = coords.y;
+			col = vec3(float(its)/maxIterations);
 			
 			gl_FragColor = vec4(col,1.0);
 		}
@@ -374,16 +379,11 @@ function drawPixiShader()
 	
 	var filter = new PIXI.Filter(null, fragSource);
 	
+	//source: http://www.html5gamedevs.com/topic/28597-vtexturecoord-and-custom-filters-on-pixi-v4/
 	filter.apply = function(filterManager, input, output)
 	{
 	  this.uniforms.dimension[0] = input.sourceFrame.width
 	  this.uniforms.dimension[1] = input.sourceFrame.height
-    
-	  //console.log(filterManager);
-	  //console.log(input);
-	  //console.log(output);
-	  //
-	  //debugger;
 	  
 	  // draw the filter...
 	  filterManager.applyFilter(this, input, output);
@@ -393,6 +393,8 @@ function drawPixiShader()
 	filter.uniforms.limits[1] = limits.top;
 	filter.uniforms.limits[2] = limits.width;
 	filter.uniforms.limits[3] = limits.height;
+	
+	filter.uniforms.maxIterations = iterations;
 	
 	graphics.filters = [filter];
 }

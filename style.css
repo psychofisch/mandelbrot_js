@@ -55,6 +55,7 @@ td {
 	overflow: hidden;
 	margin: 0 auto;
 	z-index: 0;
+	display: none;
 }
 
 .hidden {
