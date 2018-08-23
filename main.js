@@ -372,7 +372,16 @@ function drawPixiShader()
 			coords.x = limits.x + (coords.x * limits.z);
 			coords.y = limits.y + (coords.y * limits.w);
 			int its = isInMandelbrot(coords);
-			col = vec3(float(its)/maxIterations);
+			
+			float fac = float(its)/maxIterations;
+			
+			if(fac < 0.5)
+				fac *= 2.0;
+			else
+				fac = (1.0 - fac) * 2.0;
+			
+			col.g = fac;
+			col.b = fac;
 			
 			gl_FragColor = vec4(col,1.0);
 		}
